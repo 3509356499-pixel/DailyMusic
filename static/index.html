@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>听歌</title>
+    <style>
+        :root {
+            --gold: #e0c060;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --serif: "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", Georgia, serif;
+            --sans: "PingFang SC", "Microsoft YaHei", -apple-system, "Helvetica Neue", sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: var(--sans);
+            color: #f2efe8;
+            background-color: #0a0a0a;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to top,
+                rgba(6, 6, 8, 0.94) 0%,
+                rgba(6, 6, 8, 0.72) 26%,
+                rgba(6, 6, 8, 0.34) 52%,
+                rgba(6, 6, 8, 0.42) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .stage {
+            position: relative;
+            z-index: 1;
+            min-height: 100dvh;
+            display: flex;
+            align-items: flex-end;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        }
+
+        .info {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .info h1 {
+            font-family: var(--serif);
+            font-size: clamp(34px, 9vw, 52px);
+            font-weight: 400;
+            line-height: 1.12;
+            letter-spacing: 0.02em;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .chip {
+            font-size: 12px;
+            line-height: 1;
+            padding: 6px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e6e2d8;
+        }
+
+        .chip.gold {
+            border-color: rgba(224, 192, 96, 0.45);
+            color: var(--gold);
+        }
+
+        .credits {
+            font-size: 13px;
+            color: #b8b3a8;
+            margin-bottom: 14px;
+        }
+
+        .desc {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #dedad0;
+            max-width: 65ch;
+            margin-bottom: 26px;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            padding: 14px 32px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s var(--ease-out), background-color 0.2s ease, border-color 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active { transform: scale(0.96); }
+
+        button:focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 3px;
+        }
+
+        #playBtn {
+            background: var(--gold);
+            color: #14110a;
+        }
+        #playBtn:hover { background: #eed07a; }
+
+        #refreshBtn {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.24);
+            color: #f2efe8;
+        }
+        #refreshBtn:hover { background: rgba(255, 255, 255, 0.12); }
+
+        button[disabled] {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #b8b3a8;
+        }
+
+        .status .retry {
+            margin-top: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.24);
+            color: #f2efe8;
+            font-size: 13px;
+            padding: 10px 22px;
+        }
+
+        .enter > * {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+        .enter.on > * {
+            opacity: 1;
+            transform: none;
+            transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+        }
+        .enter.on > *:nth-child(2) { transition-delay: 0.05s; }
+        .enter.on > *:nth-child(3) { transition-delay: 0.1s; }
+        .enter.on > *:nth-child(4) { transition-delay: 0.15s; }
+        .enter.on > *:nth-child(5) { transition-delay: 0.2s; }
+
+        @media (min-width: 1024px) {
+            .stage { padding: 48px; }
+            .info h1 { font-size: 52px; }
+            .desc { font-size: 15px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .enter > *,
+            .enter.on > * {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stage">
+        <div class="info" id="info">
+            <h1 id="songTitle">正在挑选…</h1>
+            <div class="chips" id="chips" hidden>
+                <span class="chip" id="yearChip"></span>
+                <span class="chip" id="tagChip"></span>
+                <span class="chip gold" id="scoreChip"></span>
+            </div>
+            <div class="credits" id="credits" hidden></div>
+            <div class="desc" id="descText"></div>
+            <div class="btns" id="btns" hidden>
+                <button id="playBtn">播放</button>
+                <button id="refreshBtn">换一首</button>
+            </div>
+            <div class="status" id="status" hidden></div>
+        </div>
+    </div>
+
+<script>
+    const el = {
+        info:    document.getElementById('info'),
+        title:   document.getElementById('songTitle'),
+        chips:   document.getElementById('chips'),
+        year:    document.getElementById('yearChip'),
+        tag:     document.getElementById('tagChip'),
+        score:   document.getElementById('scoreChip'),
+        credits: document.getElementById('credits'),
+        desc:    document.getElementById('descText'),
+        btns:    document.getElementById('btns'),
+        status:  document.getElementById('status'),
+        play:    document.getElementById('playBtn'),
+        refresh: document.getElementById('refreshBtn')
+    };
+
+    let songData = null;
+    let loading = false;
+
+    function normalizeCover(bg) {
+        return bg === '/cover1.jp' ? '/cover1.jpg' : bg;
+    }
+
+    function showLoading() {
+        el.status.hidden = true;
+        el.chips.hidden = true;
+        el.credits.hidden = true;
+        el.btns.hidden = true;
+        el.title.textContent = '正在挑选…';
+        el.desc.textContent = '';
+        el.refresh.disabled = true;
+    }
+
+    function showError(message) {
+        el.title.textContent = '没能拿到歌曲';
+        el.desc.textContent = '';
+        el.chips.hidden = true;
+        el.credits.hidden = true;
+        el.btns.hidden = true;
+
+        el.status.hidden = false;
+        el.status.innerHTML = '';
+
+        const text = document.createElement('span');
+        text.textContent = message;
+        el.status.appendChild(text);
+
+        const retry = document.createElement('button');
+        retry.className = 'retry';
+        retry.textContent = '重试';
+        retry.onclick = loadSong;
+        el.status.appendChild(retry);
+    }
+
+    function render(song) {
+        document.body.style.backgroundImage = `url("${normalizeCover(song.bg)}")`;
+
+        el.title.textContent = song.title;
+        el.desc.textContent = song.desc;
+
+        el.year.textContent = song.year;
+        el.tag.textContent = song.tag;
+        el.score.textContent = `评分 ${Number(song.score).toFixed(1)}`;
+
+        el.credits.textContent = `作词 ${song.lyricist} · 作曲 ${song.composer}`;
+        el.credits.hidden = !el.credits.textContent;
+
+        el.chips.hidden = false;
+        el.btns.hidden = false;
+        el.status.hidden = true;
+        el.refresh.disabled = false;
+    }
+
+    async function loadSong() {
+        if (loading) return;
+        loading = true;
+        showLoading();
+
+        try {
+            const res = await fetch('/api/music_xue/random_songs');
+            if (!res.ok) throw new Error(`请求失败（${res.status}）`);
+            songData = await res.json();
+
+            render(songData);
+
+            el.info.classList.remove('on');
+            void el.info.offsetWidth;
+            el.info.classList.add('enter', 'on');
+        } catch (err) {
+            console.error('加载歌曲失败:', err);
+            el.info.classList.add('enter', 'on');
+            showError(err.message || '请确认后端服务是否已启动');
+        } finally {
+            loading = false;
+        }
+    }
+
+    function goToDetail() {
+        if (!songData) return;
+        const query = new URLSearchParams({
+            id: songData.id,
+            title: songData.title,
+            bg: normalizeCover(songData.bg),
+            year: songData.year,
+            tag: songData.tag,
+            lyricist: songData.lyricist,
+            composer: songData.composer,
+            score: songData.score,
+            desc: songData.desc,
+            audio: songData.audio,
+            play_count: songData.play_count ?? 0,
+            video_url: songData.video_url || ''
+        });
+        location.href = `detail.html?${query.toString()}`;
+    }
+
+    el.play.onclick = goToDetail;
+    el.refresh.onclick = loadSong;
+
+    document.addEventListener('keydown', function (e) {
+        if (!songData) return;
+        if (e.key === 'Enter') goToDetail();
+        if (e.key === ' ') {
+            e.preventDefault();
+            loadSong();
+        }
+    });
+
+    el.info.classList.add('enter');
+    loadSong();
+</script>
+</body>
+</html>
