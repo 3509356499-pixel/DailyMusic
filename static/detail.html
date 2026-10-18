@@ -389,6 +389,25 @@
         .mv:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 3px; }
         .mv[hidden] { display: none; }
 
+        /* 收藏心形按钮 */
+        .fav {
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            color: #a5a099;
+            cursor: pointer;
+            padding: 4px;
+            transition: transform 0.2s var(--ease-out), color 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fav:hover { transform: scale(1.15); color: #e8e4da; }
+        .fav:active { transform: scale(0.92); }
+        .fav:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 50%; }
+        .fav.on { color: var(--gold); }
+        .fav[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
+
         /* 播放器：播放键 + 进度条一体 */
         .player {
             display: flex;
@@ -492,6 +511,7 @@
             <div class="subline">
                 <span class="plays" id="playCount"></span>
                 <a class="mv" id="mvLink" target="_blank" rel="noopener" hidden>看 MV</a>
+                <button class="fav" id="favBtn" aria-label="收藏" aria-pressed="false" title="收藏">♡</button>
             </div>
             <div class="rule"></div>
 
@@ -631,6 +651,55 @@
     $('backBtn').onclick = function () {
         location.href = 'index.html';
     };
+
+    // ===== 收藏功能 =====
+    const favBtn = $('favBtn');
+    let favState = false;
+    let favBusy = false;
+
+    function setFav(on) {
+        favState = on;
+        favBtn.classList.toggle('on', on);
+        favBtn.textContent = on ? '♥' : '♡';
+        favBtn.setAttribute('aria-pressed', String(on));
+        favBtn.setAttribute('aria-label', on ? '取消收藏' : '收藏');
+        favBtn.title = on ? '取消收藏' : '收藏';
+    }
+
+    // 打开页面时回显收藏状态：接口返回 200 = 已收藏；404 = 未收藏（后端用 404 表达「没收藏过」）
+    async function loadFavState() {
+        if (!song.id) return;
+        try {
+            const res = await fetch('/api/music_xue/' + song.id + '/favorites');
+            if (res.status === 404) { setFav(false); return; }
+            if (!res.ok) throw new Error('查询失败 ' + res.status);
+            setFav(true);
+        } catch (err) {
+            console.warn('收藏状态查询失败:', err);
+        }
+    }
+
+    favBtn.onclick = async function () {
+        if (!song.id || favBusy) return;
+        favBusy = true;
+        const method = favState ? 'DELETE' : 'POST';
+        try {
+            const res = await fetch('/api/music_xue/' + song.id + '/favorites', { method: method });
+            if (res.status === 404) {
+                console.warn(favState ? '取消收藏失败：这首歌没有收藏记录' : '收藏失败：歌曲不存在');
+                return;
+            }
+            if (!res.ok) throw new Error('请求失败 ' + res.status);
+            setFav(!favState);
+        } catch (err) {
+            console.warn('收藏操作失败:', err);
+        } finally {
+            favBusy = false;
+        }
+    };
+
+    if (!song.id) favBtn.disabled = true;
+    loadFavState();
 
     function formatTime(s) {
         if (!isFinite(s) || s < 0) return '0:00';

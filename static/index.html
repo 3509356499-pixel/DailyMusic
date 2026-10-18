@@ -164,6 +164,36 @@
             padding: 10px 22px;
         }
 
+        /* 右下角「我的收藏」入口 */
+        .fav-entry {
+            position: fixed;
+            right: 20px;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            z-index: 20;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 11px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(20, 20, 22, 0.55);
+            backdrop-filter: blur(12px);
+            color: #cfcac0;
+            font-family: inherit;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
+        }
+
+        .fav-entry:hover {
+            color: var(--gold);
+            border-color: rgba(224, 192, 96, 0.45);
+        }
+
+        .fav-entry:active { transform: scale(0.96); }
+        .fav-entry:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
         .enter > * {
             opacity: 0;
             transform: translateY(14px);
@@ -182,6 +212,7 @@
             .stage { padding: 48px; }
             .info h1 { font-size: 52px; }
             .desc { font-size: 15px; }
+            .fav-entry { right: 36px; bottom: 36px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -212,6 +243,13 @@
             <div class="status" id="status" hidden></div>
         </div>
     </div>
+
+    <a class="fav-entry" href="favorites.html" aria-label="我的收藏">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+        <span>我的收藏</span>
+    </a>
 
 <script>
     const el = {

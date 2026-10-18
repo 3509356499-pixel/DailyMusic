@@ -157,7 +157,7 @@ songs = [
 
 
 # 创建数据库路径
-DB_PATH="music.db"
+DB_PATH= "music.db"
 
 # 连接数据库
 connect=sqlite3.connect(DB_PATH)
